@@ -1,0 +1,21 @@
+{
+  "name": "mproject",
+  "version": "1.0.0",
+  "description": "",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "vite --port 3000 --host",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "leaflet": "^1.9.4",
+    "vite": "^8.3.1"
+  },
+  "dependencies": {
+    "qrcode": "^1.5.4"
+  }
+}

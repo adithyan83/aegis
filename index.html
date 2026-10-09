@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AEGIS One // Smart Personal Emergency Response Device (IPSD)</title>
+  <meta name="description" content="AEGIS One by KnightMaster Innovations. Compact, intelligent IPSD with 3 dedicated emergency buttons, mistouch prevention, real-time GPS tracking, and instant multi-channel dispatch.">
+  
+  <!-- PWA & Mobile Meta Tags -->
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#07090e">
+
+  <!-- Google Fonts: Outfit & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <div id="app" class="platform-container">
+    
+    <!-- Top Navigation Bar -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="brand-shield-logo">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="M12 8v4"/>
+            <path d="M12 16h.01"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <div class="brand-title-row">
+            <h1>AEGIS One</h1>
+            <span class="badge-ipsd">IPSD</span>
+          </div>
+          <span class="brand-subtitle">Smart Personal Emergency Response Device · KnightMaster</span>
+        </div>
+      </div>
+
+      <div class="header-center">
+        <div id="system-status-pill" class="status-pill state-all_safe">
+          <span class="pulsing-dot"></span>
+          <span id="status-pill-text">ALL SAFE · NO ALERTS</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Connect Phone QR -->
+        <button id="btn-open-mobile-link" class="btn-highlight-phone" title="Open on Mobile Phone via Wi-Fi / QR">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+            <line x1="12" y1="18" x2="12.01" y2="18"/>
+          </svg>
+          <span>📱 Phone Link</span>
+        </button>
+
+        <!-- Web Bluetooth Device Connect -->
+        <button id="btn-connect-ble" class="btn-icon-text" title="Pair Physical AEGIS One Device over Web Bluetooth">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="m7 7 10 10-5 5V2l5 5L7 17"/>
+          </svg>
+          <span id="ble-btn-label">Pair AEGIS One</span>
+        </button>
+
+        <!-- Sound toggle -->
+        <button id="btn-sound-toggle" class="btn-icon-text" title="Toggle Synthesized Sound">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+          </svg>
+          <span>Audio Active</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- PROMINENT EMERGENCY LOCATION STATUS NOTIFICATION (Required UI feedback) -->
+    <aside id="location-feedback-toast" class="location-feedback-toast hidden" role="alert" aria-live="assertive">
+      <div class="feedback-badge-row">
+        <span class="feedback-pulse-ring" id="feedback-pulse-ring"></span>
+        <span id="feedback-icon" class="feedback-icon">📡</span>
+        <span id="feedback-status-title" class="feedback-status-title">Getting your location...</span>
+      </div>
+      <div class="feedback-details-row">
+        <span id="feedback-details-text" class="feedback-details-text">Acquiring live GPS coordinates via browser Geolocation API...</span>
+        <a id="feedback-gmaps-link" href="#" target="_blank" rel="noopener noreferrer" class="feedback-gmaps-btn hidden">
+          <span>🌐 Google Maps</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main Navigation Tab Bar (matching Section 8 of AEGIS Spec) -->
+    <nav class="app-tab-nav" aria-label="Main Navigation">
+      <button class="nav-tab active" data-tab="tab-hub">
+        <span class="tab-icon">🛡️</span>
+        <span>Safety Hub</span>
+      </button>
+      <button class="nav-tab" data-tab="tab-map">
+        <span class="tab-icon">🗺️</span>
+        <span>Live GPS &amp; Safe Zones</span>
+      </button>
+      <button class="nav-tab" data-tab="tab-contacts">
+        <span class="tab-icon">👥</span>
+        <span>Emergency Network</span>
+      </button>
+      <button class="nav-tab" data-tab="tab-medical">
+        <span class="tab-icon">🏥</span>
+        <span>Medical Profile &amp; ID</span>
+      </button>
+      <button class="nav-tab" data-tab="tab-specs">
+        <span class="tab-icon">⚙️</span>
+        <span>Specs &amp; Settings</span>
+      </button>
+    </nav>
+
+    <!-- TAB 1: SAFETY HUB (HARDWARE DEVICE & 3 DEDICATED EMERGENCY BUTTONS) -->
+    <main id="tab-hub" class="tab-content active dashboard-grid">
+      
+      <!-- COLUMN 1: AEGIS ONE HARDWARE UNIT (3 DEDICATED BUTTONS) -->
+      <section class="dash-card device-sim-panel" aria-label="AEGIS One Hardware Unit">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-icon">📟</span>
+            <h2>AEGIS One Hardware Unit</h2>
+          </div>
+          <span class="badge-tag" id="device-state-label">STANDBY / ARMED</span>
+        </div>
+
+        <!-- Physical AEGIS One Device Mockup (Section 5) -->
+        <div class="device-chassis-container">
+          <div class="aegis-pendant">
+            <!-- Stainless Steel Key Ring Loop -->
+            <div class="key-ring-loop"></div>
+
+            <!-- Recessed Button 1: RED - POLICE EMERGENCY -->
+            <div class="button-slot" id="slot-police">
+              <button id="btn-hw-police" class="aegis-hw-btn btn-police" aria-label="Button 1: Police Emergency">
+                <div class="hw-btn-icon">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  </svg>
+                </div>
+                <div class="hw-btn-label">1 · POLICE</div>
+              </button>
+              <div class="hold-progress-bar" id="hold-progress-police"></div>
+            </div>
+
+            <!-- Recessed Button 2: GREEN - MEDICAL & CRASH MODULE -->
+            <div class="button-slot" id="slot-medical">
+              <button id="btn-hw-medical" class="aegis-hw-btn btn-medical" aria-label="Button 2: Medical Emergency">
+                <div class="hw-btn-icon">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 10.5h-5.5V5c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v5.5H5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5h5.5V19c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5v-5.5H19c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5z"/>
+                  </svg>
+                </div>
+                <div class="hw-btn-label">2 · MEDICAL</div>
+              </button>
+              <div class="hold-progress-bar" id="hold-progress-medical"></div>
+            </div>
+
+            <!-- Recessed Button 3: BLUE - CUSTOM CONTACT -->
+            <div class="button-slot" id="slot-contact">
+              <button id="btn-hw-contact" class="aegis-hw-btn btn-contact" aria-label="Button 3: Custom Contact">
+                <div class="hw-btn-icon">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+                  </svg>
+                </div>
+                <div class="hw-btn-label">3 · CONTACT</div>
+              </button>
+              <div class="hold-progress-bar" id="hold-progress-contact"></div>
+            </div>
+
+            <!-- Device Bottom RGB Status LED & USB-C -->
+            <div class="device-chassis-bottom">
+              <div id="device-rgb-led" class="aegis-rgb-led led-green" title="RGB Status LED"></div>
+              <div class="device-usbc-port" title="USB-C Fast Charging Port"></div>
+            </div>
+
+            <div class="device-model-label">AEGIS ONE · IPSD</div>
+          </div>
+        </div>
+
+        <!-- Hardware Usage Hint -->
+        <div class="smart-flow-instruction">
+          <span class="info-badge">SMART ALERT FLOW</span>
+          <p>
+            <strong>Single Click:</strong> Starts 120s Mistouch Prevention countdown before alert dispatch.<br>
+            <strong>Hold 5s:</strong> Sends immediate emergency alert without delay.
+          </p>
+        </div>
+
+        <!-- Physical Telemetry Specs -->
+        <div class="telemetry-compact-grid">
+          <div class="tel-item">
+            <span class="tel-label">BATTERY</span>
+            <span class="tel-val" id="tel-battery">94%</span>
+            <span class="tel-sub">~5 Days Standby</span>
+          </div>
+          <div class="tel-item">
+            <span class="tel-label">NETWORK</span>
+            <span class="tel-val link-active">LTE-M / 4G</span>
+            <span class="tel-sub">eSIM Connected</span>
+          </div>
+          <div class="tel-item">
+            <span class="tel-label">WATERPROOF</span>
+            <span class="tel-val">IP67</span>
+            <span class="tel-sub">Shockproof · 28g</span>
+          </div>
+          <div class="tel-item">
+            <span class="tel-label">HARDWARE BLE</span>
+            <span class="tel-val link-active">BLE 5.0 Active</span>
+            <span class="tel-sub">Low Power ARM</span>
+          </div>
+        </div>
+
+        <!-- Find My AEGIS Device Buzzer Button -->
+        <button id="btn-find-aegis" class="btn-secondary-action">
+          <span>🔊 Find My AEGIS (Sound Buzzer)</span>
+        </button>
+      </section>
+
+      <!-- COLUMN 2: COMMAND HUB, 120s MISTOUCH BANNER & SCREEN EMULATION -->
+      <section class="dash-card main-command-panel" aria-label="Incident & Mistouch Control">
+        
+        <!-- Screen 2 Emulation: Emergency Alert in Progress (120s Countdown Banner) -->
+        <div id="mistouch-alert-banner" class="mistouch-alert-card">
+          <div class="mistouch-header">
+            <div class="alert-type-pill" id="banner-alert-category">POLICE EMERGENCY IN PROGRESS</div>
+            <div class="mistouch-warning-row">
+              <span class="icon-warning">⚠️</span>
+              <div>
+                <h3>Alert Will Be Sent After <span id="countdown-duration-label">120</span> Seconds</h3>
+                <p>Mistouch Prevention Active. Cancel in app if triggered accidentally.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Digital Countdown Display: e.g. 01:20 -->
+          <div class="countdown-clock-wrapper">
+            <div class="countdown-clock-digits" id="timer-display-digits">02:00</div>
+            <span class="countdown-clock-sub">Time Remaining to Cancel</span>
+          </div>
+
+          <div class="countdown-progress-track">
+            <div id="countdown-progress-bar" class="countdown-progress-fill"></div>
+          </div>
+
+          <!-- Live GPS Location Acquisition Status Strip -->
+          <div class="banner-location-strip" id="mistouch-location-strip">
+            <div class="strip-loc-header">
+              <span class="strip-loc-dot" id="strip-loc-dot"></span>
+              <strong id="strip-loc-label">Getting your location...</strong>
+            </div>
+            <div class="strip-loc-coords" id="strip-loc-coords">Querying navigator.geolocation...</div>
+          </div>
+
+          <!-- Prominent Cancel Alert Button -->
+          <div class="mistouch-cancel-actions">
+            <button id="btn-cancel-mistouch" class="btn-cancel-alert-prominent">
+              ✕ CANCEL ALERT (MISTOUCH SAFE)
+            </button>
+          </div>
+        </div>
+
+        <!-- Confirmed Active Emergency SOS Banner -->
+        <div id="active-dispatch-banner" class="active-dispatch-card">
+          <div class="dispatch-banner-info">
+            <div class="dispatch-pulse-ring">🚨</div>
+            <div>
+              <h3 id="active-dispatch-title">CONFIRMED EMERGENCY DISPATCH ACTIVE</h3>
+              <p>Live coordinates, medical telemetry, and distress beacon transmitting to authorities and contacts.</p>
+              <div class="active-dispatch-loc-row">
+                <span class="loc-authoritative-badge">AUTHORITATIVE GPS</span>
+                <span id="active-dispatch-coords" class="active-coords-text">12.97160° N, 77.59460° E (±5m)</span>
+                <a id="btn-active-dispatch-gmaps" href="https://www.google.com/maps?q=12.9716,77.5946" target="_blank" rel="noopener noreferrer" class="btn-dispatch-gmaps-link">
+                  🌐 Google Maps
+                </a>
+              </div>
+            </div>
+          </div>
+          <button id="btn-resolve-emergency" class="btn-resolve-emergency">
+            <span>🛡️ Resolve &amp; Deactivate (PIN: 1234)</span>
+          </button>
+        </div>
+
+        <!-- 3 Dedicated Action Cards on Screen -->
+        <div class="dedicated-actions-showcase">
+          <div class="showcase-card police-card">
+            <div class="showcase-header">
+              <span class="showcase-badge badge-red">BUTTON 1</span>
+              <h4>Police Emergency</h4>
+            </div>
+            <p>Sends live location, user ID, and distress beacon to the nearest police control room (112/100).</p>
+            <div class="showcase-btn-row">
+              <button class="btn-trigger-action btn-trigger-police" data-type="POLICE">Trigger Police SOS</button>
+            </div>
+          </div>
+
+          <div class="showcase-card medical-card">
+            <div class="showcase-header">
+              <span class="showcase-badge badge-green">BUTTON 2</span>
+              <h4>Medical &amp; Ambulance</h4>
+            </div>
+            <p>Dispatches ambulance alert with your Blood Group, Allergies, and Medical Profile.</p>
+            <div class="showcase-btn-row">
+              <button class="btn-trigger-action btn-trigger-medical" data-type="MEDICAL">Trigger Medical SOS</button>
+            </div>
+          </div>
+
+          <div class="showcase-card contact-card-dash">
+            <div class="showcase-header">
+              <span class="showcase-badge badge-blue">BUTTON 3</span>
+              <h4>Custom Contact</h4>
+            </div>
+            <p>Transmits live Google Maps location and instant SOS alert to your saved family or friends.</p>
+            <div class="showcase-btn-row">
+              <button class="btn-trigger-action btn-trigger-contact" data-type="CONTACT">Trigger Family SOS</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Incident Activity Log -->
+        <div class="incident-log-card">
+          <div class="log-header">
+            <h4>Live Incident &amp; Telemetry Stream</h4>
+            <span class="log-indicator">ENCRYPTED FEED</span>
+          </div>
+          <div id="incident-logs-list" class="log-stream-box">
+            <!-- Dynamic events -->
+          </div>
+        </div>
+      </section>
+
+      <!-- COLUMN 3: REAL PHONE INTEGRATION & QUICK TELEMETRY -->
+      <section class="dash-card phone-gateway-panel" aria-label="Phone Link & Gateway">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-icon">📱</span>
+            <h2>Mobile Gateway Terminal</h2>
+          </div>
+          <span class="badge-status-active" id="badge-phone-link">LINK READY</span>
+        </div>
+
+        <p class="section-desc">
+          Your smartphone serves as the companion display and communication gateway for your AEGIS One device.
+        </p>
+
+        <!-- Real Phone Hardware Controls & Execution -->
+        <div class="terminal-sync-box">
+          <div class="terminal-sync-row">
+            <span>LIVE GPS COORDINATES</span>
+            <span id="terminal-coords" class="coord-tag">12.97160° N, 77.59460° E</span>
+          </div>
+          <div class="terminal-sync-row">
+            <span>RESOLVED ADDRESS</span>
+            <span id="terminal-address" class="address-tag">Cubbon Park Transit Blvd, Central Metro Zone</span>
+          </div>
+          <div class="terminal-sync-row">
+            <span>SCREEN WAKE LOCK</span>
+            <span id="label-wake-lock" class="status-ready">Auto-Engaged on Alert</span>
+          </div>
+
+          <div class="phone-exec-actions-grid">
+            <button id="btn-activate-phone-sensors" class="btn-sync-action">
+              ⚡ Sync Phone GPS &amp; Haptics
+            </button>
+            <button id="btn-test-phone-vibe" class="btn-exec-action">
+              📳 Test Physical Vibration
+            </button>
+            <button id="btn-toggle-torch" class="btn-exec-action">
+              🔦 Flashlight / Strobe
+            </button>
+            <button id="btn-test-native-share" class="btn-exec-action btn-exec-dispatch">
+              📲 Test Native Dispatch
+            </button>
+          </div>
+        </div>
+
+        <!-- Medical Profile Quick Card -->
+        <div class="med-profile-compact-card">
+          <div class="med-card-header">
+            <h4>Wearer Medical Profile</h4>
+            <span class="blood-group-badge" id="hud-blood-group">O+ POS</span>
+          </div>
+          <div class="med-compact-details">
+            <div><strong>Name:</strong> <span id="hud-med-name">Alex Morgan</span></div>
+            <div><strong>Allergies:</strong> <span id="hud-med-allergies">Penicillin, Peanuts</span></div>
+            <div><strong>Conditions:</strong> <span id="hud-med-conditions">Mild Asthma</span></div>
+          </div>
+        </div>
+
+        <!-- KnightMaster Company Tag -->
+        <div class="company-footer-card">
+          <div class="company-logo-row">
+            <span class="knightmaster-icon">🛡️</span>
+            <strong>KNIGHTMASTER INNOVATIONS PVT. LTD.</strong>
+          </div>
+          <p>One press can save a life. Be prepared. Be protected. Be AEGIS.</p>
+        </div>
+      </section>
+    </main>
+
+    <!-- TAB 2: LIVE GPS MAP & SAFE ZONES -->
+    <div id="tab-map" class="tab-content">
+      <div class="dash-card full-map-card">
+        <div class="map-hud-header">
+          <div class="hud-left">
+            <div class="hud-item">
+              <span class="hud-label">COORDINATES</span>
+              <span class="hud-val"><span id="hud-lat">12.97160</span>, <span id="hud-lng">77.59460</span></span>
+            </div>
+            <div class="hud-item">
+              <span class="hud-label">ACCURACY</span>
+              <span class="hud-val" id="hud-acc">±5m</span>
+            </div>
+            <div class="hud-item">
+              <span class="hud-label">SATELLITES</span>
+              <span class="hud-val">GNSS (GPS+GLONASS)</span>
+            </div>
+          </div>
+          <div class="hud-right">
+            <button id="btn-map-simulate-move" class="btn-hud-action">▶ Simulate Motion</button>
+            <button id="btn-map-real-gps" class="btn-hud-action">🎯 Real GPS</button>
+            <button id="btn-map-center" class="btn-hud-action">⊕ Center</button>
+          </div>
+        </div>
+
+        <div class="map-address-banner">
+          <span class="map-pin-icon">📍</span>
+          <span id="hud-address">Cubbon Park Transit Blvd, Central Metro Zone</span>
+        </div>
+
+        <!-- Leaflet Map Viewport -->
+        <div id="tactical-map-container" class="tactical-map-viewport map-large"></div>
+      </div>
+
+      <!-- RECIPIENT & ADMIN EMERGENCY DISPATCH MONITOR (Map Display & Authoritative Coordinates) -->
+      <div class="dash-card recipient-admin-monitor-card" id="recipient-admin-monitor">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-icon">🚨</span>
+            <h2>Emergency Recipient &amp; Admin Dispatch Monitor</h2>
+          </div>
+          <div class="header-badges-row">
+            <span class="badge-tag" id="monitor-status-badge">AWAITING EMERGENCY</span>
+            <button id="btn-refresh-backend-emergencies" class="btn-subtle-refresh" title="Query AEGIS Backend Database">
+              🔄 Sync Database
+            </button>
+          </div>
+        </div>
+        <p class="section-desc">
+          Authoritative emergency location reported via Browser Geolocation API and secured in AEGIS database. Click below to view live coordinates on Google Maps.
+        </p>
+
+        <div class="monitor-details-grid">
+          <div class="monitor-item">
+            <span class="monitor-lbl">EMERGENCY ID</span>
+            <span class="monitor-val font-mono" id="monitor-emg-id">--</span>
+          </div>
+          <div class="monitor-item">
+            <span class="monitor-lbl">REPORTED USER</span>
+            <span class="monitor-val" id="monitor-user-name">Alex Morgan (usr_aegis_9821)</span>
+          </div>
+          <div class="monitor-item">
+            <span class="monitor-lbl">AUTHORITATIVE COORDINATES</span>
+            <span class="monitor-val font-mono highlight" id="monitor-coords">--</span>
+          </div>
+          <div class="monitor-item">
+            <span class="monitor-lbl">ACCURACY RADIUS</span>
+            <span class="monitor-val font-mono" id="monitor-accuracy">--</span>
+          </div>
+          <div class="monitor-item">
+            <span class="monitor-lbl">ALERT TYPE &amp; STATUS</span>
+            <span class="monitor-val" id="monitor-alert-type">Standby</span>
+          </div>
+          <div class="monitor-item">
+            <span class="monitor-lbl">READABLE ADDRESS</span>
+            <span class="monitor-val" id="monitor-address">Pending reverse geocoding...</span>
+          </div>
+        </div>
+
+        <div class="monitor-action-row">
+          <a id="monitor-gmaps-link" href="#" target="_blank" rel="noopener noreferrer" class="btn-primary-gmaps disabled">
+            <span>🌐 View Reported Location on Google Maps</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          </a>
+          <button id="btn-focus-emergency-pin" class="btn-secondary-action">
+            🎯 Focus Tactical Map Pin
+          </button>
+        </div>
+
+        <!-- Recent Emergencies Feed from AEGIS Database -->
+        <div class="recent-emergencies-section">
+          <h4>Recent Emergency Events in AEGIS Database</h4>
+          <div id="recent-emergencies-list" class="recent-emergencies-list">
+            <div class="empty-feed-hint">No emergencies recorded yet. Trigger an emergency alert to test database persistence.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: EMERGENCY NETWORK & CONTACTS -->
+    <div id="tab-contacts" class="tab-content">
+      <div class="contacts-grid-layout">
+        
+        <!-- Emergency Contacts Manager -->
+        <div class="dash-card">
+          <div class="card-header">
+            <div class="card-title">
+              <span class="card-icon">👥</span>
+              <h2>Emergency Contacts</h2>
+            </div>
+            <button id="btn-add-contact" class="btn-subtle-add">+ Add Contact</button>
+          </div>
+          <p class="section-desc">Designated contacts notified instantly when an emergency is activated.</p>
+          <div id="contacts-list" class="contacts-scroll-area">
+            <!-- Dynamic Contacts -->
+          </div>
+        </div>
+
+        <!-- Real-Time Outgoing Dispatch Queue -->
+        <div class="dash-card">
+          <div class="card-header">
+            <div class="card-title">
+              <span class="card-icon">📡</span>
+              <h2>Live Dispatch Queue</h2>
+            </div>
+            <span class="badge-status">SMS / WhatsApp / Call</span>
+          </div>
+          <p class="section-desc">Simulates live transmission of Google Maps links and patient medical profile.</p>
+          <div id="dispatch-queue-container" class="dispatch-queue-area">
+            <!-- Dynamic dispatches -->
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- TAB 4: MEDICAL PROFILE & HISTORY -->
+    <div id="tab-medical" class="tab-content">
+      <div class="dash-card medical-profile-card">
+        <div class="card-header">
+          <div class="card-title">
+            <span class="card-icon">🏥</span>
+            <h2>Wearer Medical Profile &amp; Emergency ID</h2>
+          </div>
+          <span class="badge-tag">AUTOMATICALLY SENT WITH BUTTON 2</span>
+        </div>
+        <p class="section-desc">This data is automatically transmitted to ambulance dispatchers and emergency doctors during a Medical Emergency.</p>
+
+        <form id="form-medical-profile" class="medical-form-grid">
+          <div class="form-group">
+            <label for="med-full-name">Full Legal Name</label>
+            <input type="text" id="med-full-name" class="form-input" value="Alex Morgan" required>
+          </div>
+          <div class="form-group">
+            <label for="med-blood-group">Blood Group</label>
+            <select id="med-blood-group" class="form-select">
+              <option value="O+ Positive" selected>O+ Positive</option>
+              <option value="O- Negative">O- Negative</option>
+              <option value="A+ Positive">A+ Positive</option>
+              <option value="A- Negative">A- Negative</option>
+              <option value="B+ Positive">B+ Positive</option>
+              <option value="B- Negative">B- Negative</option>
+              <option value="AB+ Positive">AB+ Positive</option>
+              <option value="AB- Negative">AB- Negative</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="med-allergies">Known Allergies (Medications / Food)</label>
+            <input type="text" id="med-allergies" class="form-input" value="Penicillin, Peanuts">
+          </div>
+          <div class="form-group">
+            <label for="med-conditions">Medical Conditions / Diseases</label>
+            <input type="text" id="med-conditions" class="form-input" value="Mild Asthma">
+          </div>
+          <div class="form-group span-2">
+            <label for="med-emergency-notes">Critical Emergency Notes for Paramedics</label>
+            <textarea id="med-emergency-notes" class="form-input form-textarea" rows="3">Carries inhaler in backpack. Organ donor registered.</textarea>
+          </div>
+          <div class="form-group span-2">
+            <button type="submit" class="btn-primary">💾 Save Medical Profile</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- TAB 5: SPECS & WORKFLOW SETTINGS -->
+    <div id="tab-specs" class="tab-content">
+      <div class="settings-grid-layout">
+        
+        <!-- Settings Form -->
+        <div class="dash-card">
+          <div class="card-header">
+            <div class="card-title">
+              <span class="card-icon">⚙️</span>
+              <h2>Smart Alert Flow Settings</h2>
+            </div>
+          </div>
+          <form id="form-settings" class="modal-form">
+            <div class="form-group">
+              <label for="opt-mistouch-duration">Mistouch Prevention Countdown (Seconds)</label>
+              <select id="opt-mistouch-duration" class="form-select">
+                <option value="15">15 Seconds (Rapid Dispatch)</option>
+                <option value="30">30 Seconds</option>
+                <option value="60">60 Seconds (1 Minute)</option>
+                <option value="120" selected>120 Seconds (AEGIS One Default)</option>
+              </select>
+              <span class="form-help">Time window to cancel an accidental button press before authorities are notified.</span>
+            </div>
+
+            <div class="form-group">
+              <label for="opt-hold-duration">Immediate Alert Long-Press Bypass (Seconds)</label>
+              <input type="number" id="opt-hold-duration" min="2.0" max="8.0" step="0.5" value="5.0" class="form-input">
+              <span class="form-help">Press and hold any button for 5 seconds to bypass countdown and dispatch immediately.</span>
+            </div>
+
+            <div class="form-group">
+              <label for="opt-security-pin">Security Deactivation PIN</label>
+              <input type="password" id="opt-security-pin" maxlength="6" value="1234" class="form-input">
+              <span class="form-help">Required to resolve and dismiss a confirmed active SOS alert.</span>
+            </div>
+
+            <button type="submit" class="btn-primary-full">Apply &amp; Save Settings</button>
+          </form>
+        </div>
+
+        <!-- AEGIS One Technical Specifications Card (Section 9) -->
+        <div class="dash-card specs-card-full">
+          <div class="card-header">
+            <div class="card-title">
+              <span class="card-icon">📋</span>
+              <h2>AEGIS One Specifications</h2>
+            </div>
+            <span class="badge-tag">HARDWARE SPEC</span>
+          </div>
+
+          <table class="specs-table">
+            <tbody>
+              <tr><td><strong>Dimensions</strong></td><td>28 × 58 × 13.5 mm (Ultra Compact)</td></tr>
+              <tr><td><strong>Weight</strong></td><td>~28 grams</td></tr>
+              <tr><td><strong>Network</strong></td><td>LTE-M / NB-IoT / 4G Fallback + BLE 5.0</td></tr>
+              <tr><td><strong>GPS Constellations</strong></td><td>GPS + GLONASS + Galileo + BeiDou</td></tr>
+              <tr><td><strong>Sensors</strong></td><td>3-Axis Accelerometer, 3-Axis Gyroscope</td></tr>
+              <tr><td><strong>Battery</strong></td><td>500–650 mAh Li-Po (Rechargeable)</td></tr>
+              <tr><td><strong>Standby Time</strong></td><td>5 – 7 Days</td></tr>
+              <tr><td><strong>Working Time</strong></td><td>2 – 3 Days (Active Tracking)</td></tr>
+              <tr><td><strong>Charging Port</strong></td><td>USB Type-C Fast Charging</td></tr>
+              <tr><td><strong>Water Resistance</strong></td><td>IP67 Waterproof &amp; Shockproof</td></tr>
+              <tr><td><strong>Operating Temp</strong></td><td>-10°C to 55°C</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- MODAL: CONNECT REAL MOBILE PHONE VIA QR CODE -->
+    <div id="modal-phone-link" class="modal-backdrop">
+      <div class="modal-dialog qr-dialog">
+        <div class="modal-header">
+          <div class="modal-title-group">
+            <h3>📱 Connect Your Mobile Phone</h3>
+            <p>Scan with your phone camera to run the AEGIS One Companion Web App directly on your mobile device.</p>
+          </div>
+          <button id="btn-close-phone-link" class="modal-btn-close">&times;</button>
+        </div>
+
+        <div class="qr-dialog-body">
+          <div class="qr-canvas-wrapper">
+            <canvas id="qr-code-canvas"></canvas>
+          </div>
+
+          <div class="qr-info-block">
+            <span class="qr-step-badge">Direct Local Link:</span>
+            <code id="qr-target-url" class="qr-url-code">http://192.168.1.36:3000/</code>
+            <p class="qr-instructions">
+              <strong>Instructions:</strong>
+              <br>1. Connect your phone to this Wi-Fi network.
+              <br>2. Point your phone camera at this QR code.
+              <br>3. Open the link to use your phone as the companion terminal with real GPS, real haptic vibration, and instant 1-tap WhatsApp/SMS emergency dispatch!
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: ADD EMERGENCY CONTACT -->
+    <div id="modal-add-contact" class="modal-backdrop">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3>Add Emergency Contact</h3>
+          <button id="btn-close-add-contact" class="modal-btn-close">&times;</button>
+        </div>
+        <form id="form-add-contact" class="modal-form">
+          <div class="form-group">
+            <label for="contact-name">Full Name</label>
+            <input type="text" id="contact-name" class="form-input" placeholder="e.g., Sarah Morgan" required>
+          </div>
+          <div class="form-group">
+            <label for="contact-phone">Mobile Phone (with country code)</label>
+            <input type="tel" id="contact-phone" class="form-input" placeholder="+1 (555) 234-8901" required>
+          </div>
+          <div class="form-group">
+            <label for="contact-relation">Relationship</label>
+            <select id="contact-relation" class="form-select">
+              <option value="Family">Family Member</option>
+              <option value="Friend">Friend / Roommate</option>
+              <option value="Police">Police Liaison</option>
+              <option value="Medical">Doctor / Hospital</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="contact-priority">Priority Level</label>
+            <select id="contact-priority" class="form-select">
+              <option value="1">Priority 1 (Instant SMS + Call)</option>
+              <option value="2">Priority 2 (SMS Alert)</option>
+              <option value="3">Priority 3 (Email / Notification)</option>
+            </select>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn-primary-full">Save Emergency Contact</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
